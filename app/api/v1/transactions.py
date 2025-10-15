@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from app.services.csv_parser import parse_transactions_csv
-from app.db.crud import create_transactions_bulk
+from app.services.csv_parser import csv_parser
+from app.db import create_transactions_bulk
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -10,6 +10,6 @@ async def upload_csv(file: UploadFile = File(...), user=Depends(...)):
     if not file.filename.endswith((".csv", ".xls", ".xlsx")):
         raise HTTPException(400, "CSV/Excel 파일을 업로드하세요.")
     rows = await file.read()
-    transactions = parse_transactions_csv(rows, filename=file.filename)
+    transactions = csv_parser(rows, filename=file.filename)
     created = create_transactions_bulk(user.id, transactions)
     return {"imported": len(created)}

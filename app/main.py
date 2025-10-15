@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.v1 import upload, analyze, transactions
 
 app = FastAPI(title="SmartFinance API", version="0.1")
 
@@ -10,6 +11,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
+app.include_router(analyze.router, prefix="/api/analyze", tags=["Analyze"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["Transactions"])
 
 @app.get("/")
 def root():
