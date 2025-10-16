@@ -6,6 +6,9 @@ router = APIRouter()
 
 @router.post("/")
 async def upload_csv(file: UploadFile = File(...)):
+    """
+    CSV/Excel 파일을 업로드하고 컬럼 및 미리보기 데이터 반환
+    """
     if not file.filename.endswith((".csv", ".xls", ".xlsx")):
         return {"error": "Only CSV or Excel files are supported"}
 
@@ -18,7 +21,6 @@ async def upload_csv(file: UploadFile = File(...)):
     except Exception as e:
         return {"error": str(e)}
 
-    # 컬럼 정보와 데이터 일부만 리턴
     return {
         "filename": file.filename,
         "columns": list(df.columns),

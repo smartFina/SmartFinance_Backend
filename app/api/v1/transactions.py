@@ -1,15 +1,17 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from app.services.csv_parser import csv_parser
-from app.db import create_transactions_bulk
+from fastapi import APIRouter
 
-router = APIRouter(prefix="/transactions", tags=["transactions"])
+router = APIRouter()
 
-@router.post("/upload")
-async def upload_csv(file: UploadFile = File(...), user=Depends(...)):
-    # 간단한 파일 검증
-    if not file.filename.endswith((".csv", ".xls", ".xlsx")):
-        raise HTTPException(400, "CSV/Excel 파일을 업로드하세요.")
-    rows = await file.read()
-    transactions = csv_parser(rows, filename=file.filename)
-    created = create_transactions_bulk(user.id, transactions)
-    return {"imported": len(created)}
+# 임시 저장용 (나중에 DB 연동 가능)
+transactions_data = []
+
+@router.get("/")
+def get_transactions():
+    """저장된 거래 데이터 조회"""
+    return {"transactions": transactions_data, "count": len(transactions_data)}
+
+@router.post("/")
+def add_transaction(transaction: dict):
+    """새 거래 추가 (MVP용 임시 저장)"""
+    transactions_data.append(transaction)
+    return {"message": "Transaction added", "count": len(transactions_data)}
