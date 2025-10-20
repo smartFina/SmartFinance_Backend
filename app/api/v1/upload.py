@@ -1,29 +1,27 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 import pandas as pd
-from io import BytesIO
+import io
 
 router = APIRouter()
 
 @router.post("/")
-async def upload_csv(file: UploadFile = File(...)):
-    """
-    CSV/Excel 파일을 업로드하고 컬럼 및 미리보기 데이터 반환
-    """
-    if not file.filename.endswith((".csv", ".xls", ".xlsx")):
-        return {"error": "Only CSV or Excel files are supported"}
-
-    content = await file.read()
+async def upload_transactions(file: UploadFile = File(...)):
     try:
-        if file.filename.endswith(".csv"):
-            df = pd.read_csv(BytesIO(content))
-        else:
-            df = pd.read_excel(BytesIO(content))
-    except Exception as e:
-        return {"error": str(e)}
+        if not file.filename.endswith(".csv"):
+            raise HTTPException(status_code=400, detail="CSV 파일만 업로드 가능합니다.")
+        
+        contents = await file.read()
+        df = pd.read_csv(io.BytesIO(contents))
+        df.columns = [col.strip() for col in df.columns]
+        
+        # 데이터 검증
+        required_cols = {"Date", "Description", "Category", "Amount"}
+        if not required_cols.issubset(df.columns):
+            raise HTTPException(status_code=400, detail=f"필수 컬럼 누락: {required_cols - set(df.columns)}")
 
-    return {
-        "filename": file.filename,
-        "columns": list(df.columns),
-        "preview": df.head(5).to_dict(orient="records"),
-        "rows": len(df),
-    }
+        # 임시 저장 (DB 대신 메모리)
+        df.to_csv("uploaded_transactions.csv", index=False)
+        
+        return {"message": "파일 업로드 성공", "rows": len(df)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
